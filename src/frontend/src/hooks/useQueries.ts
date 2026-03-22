@@ -37,6 +37,20 @@ export function useGetWithdrawalRequests() {
   });
 }
 
+export function usePlayGame() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (gameId: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.playGame(gameId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["balance"] });
+    },
+  });
+}
+
 export function useRequestWithdrawal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -59,5 +73,36 @@ export function useSaveUserProfile() {
       if (!actor) throw new Error("Not connected");
       return actor.saveCallerUserProfile({ username });
     },
+  });
+}
+
+export function useAddGame() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (game: {
+      title: string;
+      genre: string;
+      url: string;
+      rewardAmount: bigint;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.addGame(game);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+    },
+  });
+}
+
+export function useIsAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["isAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !isFetching,
   });
 }

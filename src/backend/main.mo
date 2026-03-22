@@ -7,9 +7,9 @@ import List "mo:core/List";
 import Time "mo:core/Time";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   type GameId = Nat;
   type UserProfile = {

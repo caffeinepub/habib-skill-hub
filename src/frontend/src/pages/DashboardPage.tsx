@@ -28,9 +28,12 @@ import {
   Gamepad2,
   Loader2,
   LogOut,
+  Plus,
+  Shield,
   Trophy,
   Wallet,
   XCircle,
+  Zap,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -38,9 +41,12 @@ import { toast } from "sonner";
 import { WithdrawalStatus } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
+  useAddGame,
   useGetBalance,
   useGetWithdrawalRequests,
+  useIsAdmin,
   useListGames,
+  usePlayGame,
   useRequestWithdrawal,
 } from "../hooks/useQueries";
 
@@ -53,6 +59,8 @@ const GENRE_COLORS: Record<string, string> = {
   Adventure: "oklch(0.65 0.2 230)",
   Simulation: "oklch(0.65 0.18 170)",
   Racing: "oklch(0.7 0.22 40)",
+  Runner: "oklch(0.68 0.22 50)",
+  Social: "oklch(0.65 0.2 310)",
 };
 
 function genreColor(genre: string) {
@@ -61,46 +69,32 @@ function genreColor(genre: string) {
 
 const DEMO_GAMES = [
   {
+    id: BigInt(0),
+    title: "Candy Crush",
+    genre: "Puzzle",
+    rewardAmount: BigInt(5),
+    url: "https://www.king.com/game/candycrush",
+  },
+  {
     id: BigInt(1),
-    title: "Cyber Blitz Arena",
-    genre: "Action",
-    rewardAmount: BigInt(500),
-    url: "https://example.com/cyber-blitz",
+    title: "Subway Surfers",
+    genre: "Runner",
+    rewardAmount: BigInt(10),
+    url: "https://www.kiloo.com/subway-surfers/",
   },
   {
     id: BigInt(2),
-    title: "Dragon's Quest Online",
-    genre: "RPG",
-    rewardAmount: BigInt(1200),
-    url: "https://example.com/dragons-quest",
+    title: "Among Us",
+    genre: "Social",
+    rewardAmount: BigInt(15),
+    url: "https://www.innersloth.com/games/among-us/",
   },
   {
     id: BigInt(3),
-    title: "Neon Racer X",
-    genre: "Racing",
-    rewardAmount: BigInt(300),
-    url: "https://example.com/neon-racer",
-  },
-  {
-    id: BigInt(4),
-    title: "Puzzle Legends",
-    genre: "Puzzle",
-    rewardAmount: BigInt(750),
-    url: "https://example.com/puzzle-legends",
-  },
-  {
-    id: BigInt(5),
-    title: "Strike Force Zero",
+    title: "Clash of Clans",
     genre: "Strategy",
-    rewardAmount: BigInt(900),
-    url: "https://example.com/strike-force",
-  },
-  {
-    id: BigInt(6),
-    title: "Goal Champions",
-    genre: "Sports",
-    rewardAmount: BigInt(450),
-    url: "https://example.com/goal-champions",
+    rewardAmount: BigInt(20),
+    url: "https://supercell.com/en/games/clashofclans/",
   },
 ];
 
@@ -147,6 +141,144 @@ function StatusBadge({ status }: { status: WithdrawalStatus }) {
   );
 }
 
+type DemoGame = (typeof DEMO_GAMES)[number];
+type BackendGame = {
+  title: string;
+  genre: string;
+  rewardAmount: bigint;
+  url: string;
+};
+type DisplayGame = DemoGame | BackendGame;
+
+function getGameId(game: DisplayGame, index: number): bigint {
+  return "id" in game ? (game as DemoGame).id : BigInt(index);
+}
+
+function GameCard({
+  game,
+  index,
+  isDemo,
+}: {
+  game: DisplayGame;
+  index: number;
+  isDemo: boolean;
+}) {
+  const { mutateAsync: playGame, isPending: playing } = usePlayGame();
+  const [earned, setEarned] = useState(false);
+
+  const handleEarnReward = async () => {
+    if (isDemo) {
+      toast.info("Connect your wallet to earn real rewards!");
+      return;
+    }
+    try {
+      await playGame(getGameId(game, index));
+      setEarned(true);
+      toast.success(`+$${Number(game.rewardAmount)} added to your balance!`);
+      setTimeout(() => setEarned(false), 3000);
+    } catch {
+      toast.error("Failed to earn reward. Please try again.");
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="game-card rounded-xl p-5 flex flex-col gap-4"
+      data-ocid={`games.item.${index + 1}`}
+    >
+      <div className="flex items-start justify-between">
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center"
+          style={{ background: `${genreColor(game.genre)}22` }}
+        >
+          <Gamepad2
+            className="w-5 h-5"
+            style={{ color: genreColor(game.genre) }}
+          />
+        </div>
+        <span
+          className="text-xs font-semibold px-2.5 py-1 rounded-full"
+          style={{
+            background: `${genreColor(game.genre)}20`,
+            color: genreColor(game.genre),
+          }}
+        >
+          {game.genre}
+        </span>
+      </div>
+
+      <div className="flex-1">
+        <h3 className="font-display font-semibold text-foreground text-sm leading-snug">
+          {game.title}
+        </h3>
+        <div className="flex items-center gap-1.5 mt-2">
+          <Coins
+            className="w-3.5 h-3.5"
+            style={{ color: "oklch(0.82 0.18 60)" }}
+          />
+          <span
+            className="text-sm font-bold"
+            style={{ color: "oklch(0.82 0.18 60)" }}
+          >
+            ${Number(game.rewardAmount)} reward
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <a
+          href={game.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
+          style={{
+            background: "oklch(0.72 0.18 195 / 0.15)",
+            color: "oklch(0.88 0.16 195)",
+            border: "1px solid oklch(0.72 0.18 195 / 0.3)",
+          }}
+          data-ocid={`games.play.button.${index + 1}`}
+        >
+          Play Now <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+        <button
+          type="button"
+          onClick={handleEarnReward}
+          disabled={playing}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: earned
+              ? "oklch(0.65 0.22 145 / 0.3)"
+              : "oklch(0.65 0.22 145 / 0.15)",
+            color: "oklch(0.82 0.2 145)",
+            border: "1px solid oklch(0.65 0.22 145 / 0.3)",
+          }}
+          data-ocid={`games.earn.button.${index + 1}`}
+        >
+          {playing ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Earning...
+            </>
+          ) : earned ? (
+            <>
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Earned!
+            </>
+          ) : (
+            <>
+              <Zap className="w-3.5 h-3.5" />
+              Earn Reward
+            </>
+          )}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function DashboardPage() {
   const { identity, clear } = useInternetIdentity();
   const navigate = useNavigate();
@@ -156,15 +288,26 @@ export default function DashboardPage() {
     useGetWithdrawalRequests();
   const { mutateAsync: requestWithdrawal, isPending: withdrawing } =
     useRequestWithdrawal();
+  const { data: isAdmin } = useIsAdmin();
+  const { mutateAsync: addGame, isPending: addingGame } = useAddGame();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [newGame, setNewGame] = useState({
+    title: "",
+    genre: "",
+    url: "",
+    rewardAmount: "",
+  });
 
   if (!identity) {
     navigate({ to: "/" });
     return null;
   }
 
-  const displayGames = games && games.length > 0 ? games : DEMO_GAMES;
+  const displayGames: DisplayGame[] =
+    games && games.length > 0 ? games : DEMO_GAMES;
+  const isDemo = !games || games.length === 0;
   const balanceNum = balance !== undefined ? Number(balance) : 0;
 
   const handleLogout = () => {
@@ -189,6 +332,36 @@ export default function DashboardPage() {
       setWithdrawAmount("");
     } catch {
       toast.error("Withdrawal failed. Please try again.");
+    }
+  };
+
+  const handleAddGame = async () => {
+    if (
+      !newGame.title ||
+      !newGame.genre ||
+      !newGame.url ||
+      !newGame.rewardAmount
+    ) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+    const rewardAmt = Number(newGame.rewardAmount);
+    if (Number.isNaN(rewardAmt) || rewardAmt <= 0) {
+      toast.error("Invalid reward amount.");
+      return;
+    }
+    try {
+      await addGame({
+        title: newGame.title,
+        genre: newGame.genre,
+        url: newGame.url,
+        rewardAmount: BigInt(Math.floor(rewardAmt)),
+      });
+      toast.success("Game added successfully!");
+      setAdminOpen(false);
+      setNewGame({ title: "", genre: "", url: "", rewardAmount: "" });
+    } catch {
+      toast.error("Failed to add game. Please try again.");
     }
   };
 
@@ -258,6 +431,121 @@ export default function DashboardPage() {
               </span>
               <span className="text-muted-foreground text-xs">balance</span>
             </div>
+            {isAdmin && (
+              <Dialog open={adminOpen} onOpenChange={setAdminOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-muted-foreground hover:text-foreground"
+                    data-ocid="admin.add_game.open_modal_button"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent data-ocid="admin.dialog">
+                  <DialogHeader>
+                    <DialogTitle className="font-display text-lg flex items-center gap-2">
+                      <Shield
+                        className="w-5 h-5"
+                        style={{ color: "oklch(0.82 0.18 290)" }}
+                      />
+                      Add New Game
+                    </DialogTitle>
+                    <DialogDescription>
+                      Add a new game to the platform for users to play and earn
+                      rewards.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="game-title">Title</Label>
+                      <Input
+                        id="game-title"
+                        placeholder="Awesome Game"
+                        value={newGame.title}
+                        onChange={(e) =>
+                          setNewGame((p) => ({ ...p, title: e.target.value }))
+                        }
+                        data-ocid="admin.game_title.input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="game-genre">Genre</Label>
+                      <Input
+                        id="game-genre"
+                        placeholder="Action, Puzzle, RPG..."
+                        value={newGame.genre}
+                        onChange={(e) =>
+                          setNewGame((p) => ({ ...p, genre: e.target.value }))
+                        }
+                        data-ocid="admin.game_genre.input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="game-url">Game URL</Label>
+                      <Input
+                        id="game-url"
+                        placeholder="https://..."
+                        value={newGame.url}
+                        onChange={(e) =>
+                          setNewGame((p) => ({ ...p, url: e.target.value }))
+                        }
+                        data-ocid="admin.game_url.input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="game-reward">Reward Amount ($)</Label>
+                      <Input
+                        id="game-reward"
+                        type="number"
+                        min="1"
+                        placeholder="10"
+                        value={newGame.rewardAmount}
+                        onChange={(e) =>
+                          setNewGame((p) => ({
+                            ...p,
+                            rewardAmount: e.target.value,
+                          }))
+                        }
+                        data-ocid="admin.game_reward.input"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter className="gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setAdminOpen(false)}
+                      data-ocid="admin.cancel_button"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleAddGame}
+                      disabled={addingGame}
+                      style={{
+                        background: "oklch(0.65 0.22 290)",
+                        color: "oklch(0.1 0.02 290)",
+                      }}
+                      data-ocid="admin.submit_button"
+                    >
+                      {addingGame ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Game
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -313,7 +601,9 @@ export default function DashboardPage() {
                 Available Games
               </h2>
               <p className="text-muted-foreground text-sm mt-0.5">
-                Play games to earn rewards
+                {isDemo
+                  ? "Demo games — connect to see live games"
+                  : "Play games to earn rewards"}
               </p>
             </div>
             <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
@@ -388,83 +678,32 @@ export default function DashboardPage() {
           </div>
 
           {gamesLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+              data-ocid="games.loading_state"
+            >
               {["a", "b", "c", "d"].map((k) => (
                 <div
                   key={k}
-                  className="rounded-xl h-48 animate-pulse"
+                  className="rounded-xl h-52 animate-pulse"
                   style={{ background: "oklch(var(--card))" }}
                 />
               ))}
             </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
+            <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
               data-ocid="games.list"
             >
               {displayGames.map((game, i) => (
-                <div
-                  key={String("id" in game ? game.id : i)}
-                  className="game-card rounded-xl p-5 flex flex-col gap-4"
-                  data-ocid={`games.item.${i + 1}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{ background: `${genreColor(game.genre)}22` }}
-                    >
-                      <Gamepad2
-                        className="w-5 h-5"
-                        style={{ color: genreColor(game.genre) }}
-                      />
-                    </div>
-                    <span
-                      className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                      style={{
-                        background: `${genreColor(game.genre)}20`,
-                        color: genreColor(game.genre),
-                      }}
-                    >
-                      {game.genre}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-display font-semibold text-foreground text-sm leading-snug">
-                      {game.title}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <Coins
-                        className="w-3.5 h-3.5"
-                        style={{ color: "oklch(0.82 0.18 60)" }}
-                      />
-                      <span
-                        className="text-sm font-bold"
-                        style={{ color: "oklch(0.82 0.18 60)" }}
-                      >
-                        ${Number(game.rewardAmount).toLocaleString()} reward
-                      </span>
-                    </div>
-                  </div>
-                  <a
-                    href={game.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
-                    style={{
-                      background: "oklch(0.72 0.18 195 / 0.15)",
-                      color: "oklch(0.88 0.16 195)",
-                      border: "1px solid oklch(0.72 0.18 195 / 0.3)",
-                    }}
-                    data-ocid={`games.play.button.${i + 1}`}
-                  >
-                    Play Now <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
+                <GameCard
+                  key={"id" in game ? String((game as { id: bigint }).id) : i}
+                  game={game}
+                  index={i}
+                  isDemo={isDemo}
+                />
               ))}
-            </motion.div>
+            </div>
           )}
         </section>
 

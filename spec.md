@@ -1,29 +1,22 @@
 # Game Site
 
 ## Current State
-New project. No existing application files.
+Game rewards platform with user auth, games dashboard, balance tracking, and withdrawal requests on Motoko backend.
 
 ## Requested Changes (Diff)
 
 ### Add
-- User authentication (signup/login) with email and password
-- Games listing with title, genre, reward amount, and play URL
-- User balance tracking
-- Withdrawal request system (user requests withdrawal of balance via a method)
-- Dashboard page showing all available games
-- Login and Signup pages
+- `userId` returned on login so frontend can store it
+- `handlePlay` / Earn Reward button on dashboard that credits user balance when clicked
+- `target="_blank"` on Play Now links
 
 ### Modify
-N/A
+- Dashboard shows both "Play Now" link and "Earn Reward" button per game card
+- Login stores userId in addition to token and balance
 
 ### Remove
-N/A
+- Nothing removed
 
 ## Implementation Plan
-- Backend (Motoko): User profiles with balance, game records, withdrawal records
-- Auth via Caffeine authorization component
-- Games: list games, add games (admin)
-- Withdrawals: request withdrawal, deduct balance, track status
-- Frontend: Login, Signup, Dashboard pages with React Router
-- Dashboard shows game cards with Play Now links and reward info
-- User can see their balance and request withdrawals
+1. Update Motoko backend: ensure login returns userId, add earnReward endpoint that credits balance
+2. Update frontend: Login stores userId, Dashboard has Play Now + Earn Reward buttons
