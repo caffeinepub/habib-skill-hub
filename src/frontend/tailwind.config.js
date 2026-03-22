@@ -16,8 +16,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
-        display: ['Bricolage Grotesque', 'sans-serif'],
+        sans: ["Plus Jakarta Sans", "sans-serif"],
+        display: ["Bricolage Grotesque", "sans-serif"],
       },
       colors: {
         border: "oklch(var(--border))",
@@ -75,14 +75,14 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        xl: "1.25rem",
-        "2xl": "1.5rem",
-        "3xl": "2rem",
+        xl: "1rem",
+        "2xl": "1.25rem",
+        "3xl": "1.5rem",
       },
       boxShadow: {
-        xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
-        glow: "0 0 30px oklch(0.58 0.22 290 / 0.3)",
-        "glow-blue": "0 0 30px oklch(0.55 0.18 250 / 0.3)",
+        xs: "0 1px 2px 0 rgba(0,0,0,0.1)",
+        glow: "0 0 24px oklch(0.72 0.18 195 / 0.25)",
+        "glow-green": "0 0 24px oklch(0.65 0.22 145 / 0.25)",
       },
       keyframes: {
         "accordion-down": {
@@ -93,10 +93,15 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "0.6" },
+          "50%": { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
     },
   },

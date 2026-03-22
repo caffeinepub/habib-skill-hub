@@ -10,7 +10,42 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface _SERVICE {}
+export interface Game {
+  'url' : string,
+  'title' : string,
+  'rewardAmount' : bigint,
+  'genre' : string,
+}
+export type GameId = bigint;
+export type Time = bigint;
+export interface UserProfile { 'username' : string }
+export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
+export interface WithdrawalRequest {
+  'status' : WithdrawalStatus,
+  'rejectionReason' : [] | [string],
+  'timestamp' : Time,
+  'amount' : bigint,
+}
+export type WithdrawalStatus = { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
+export interface _SERVICE {
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addGame' : ActorMethod<[Game], GameId>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'getBalance' : ActorMethod<[], bigint>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getWithdrawalRequests' : ActorMethod<[], Array<WithdrawalRequest>>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'listGames' : ActorMethod<[], Array<Game>>,
+  'playGame' : ActorMethod<[GameId], undefined>,
+  'requestWithdrawal' : ActorMethod<[bigint], undefined>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+}
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
 export declare const idlFactory: IDL.InterfaceFactory;

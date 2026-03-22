@@ -8,10 +8,108 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const idlService = IDL.Service({});
+export const Game = IDL.Record({
+  'url' : IDL.Text,
+  'title' : IDL.Text,
+  'rewardAmount' : IDL.Nat,
+  'genre' : IDL.Text,
+});
+export const GameId = IDL.Nat;
+export const UserRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
+export const UserProfile = IDL.Record({ 'username' : IDL.Text });
+export const WithdrawalStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const Time = IDL.Int;
+export const WithdrawalRequest = IDL.Record({
+  'status' : WithdrawalStatus,
+  'rejectionReason' : IDL.Opt(IDL.Text),
+  'timestamp' : Time,
+  'amount' : IDL.Nat,
+});
+
+export const idlService = IDL.Service({
+  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addGame' : IDL.Func([Game], [GameId], []),
+  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'getBalance' : IDL.Func([], [IDL.Nat], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getUserProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
+  'getWithdrawalRequests' : IDL.Func(
+      [],
+      [IDL.Vec(WithdrawalRequest)],
+      ['query'],
+    ),
+  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'listGames' : IDL.Func([], [IDL.Vec(Game)], ['query']),
+  'playGame' : IDL.Func([GameId], [], []),
+  'requestWithdrawal' : IDL.Func([IDL.Nat], [], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+});
 
 export const idlInitArgs = [];
 
-export const idlFactory = ({ IDL }) => { return IDL.Service({}); };
+export const idlFactory = ({ IDL }) => {
+  const Game = IDL.Record({
+    'url' : IDL.Text,
+    'title' : IDL.Text,
+    'rewardAmount' : IDL.Nat,
+    'genre' : IDL.Text,
+  });
+  const GameId = IDL.Nat;
+  const UserRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
+  const UserProfile = IDL.Record({ 'username' : IDL.Text });
+  const WithdrawalStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const Time = IDL.Int;
+  const WithdrawalRequest = IDL.Record({
+    'status' : WithdrawalStatus,
+    'rejectionReason' : IDL.Opt(IDL.Text),
+    'timestamp' : Time,
+    'amount' : IDL.Nat,
+  });
+  
+  return IDL.Service({
+    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addGame' : IDL.Func([Game], [GameId], []),
+    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'getBalance' : IDL.Func([], [IDL.Nat], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getUserProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
+    'getWithdrawalRequests' : IDL.Func(
+        [],
+        [IDL.Vec(WithdrawalRequest)],
+        ['query'],
+      ),
+    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'listGames' : IDL.Func([], [IDL.Vec(Game)], ['query']),
+    'playGame' : IDL.Func([GameId], [], []),
+    'requestWithdrawal' : IDL.Func([IDL.Nat], [], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  });
+};
 
 export const init = ({ IDL }) => { return []; };
